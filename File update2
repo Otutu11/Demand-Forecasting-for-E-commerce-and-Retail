@@ -1,0 +1,74 @@
+# Demand Forecasting for E-commerce and Retail
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import xgboost as xgb
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+# Load dataset
+data = pd.read_csv('ecommerce_sales_data.csv', parse_dates=['date'])
+data = data.sort_values('date')
+
+# Exploratory Data Analysis
+print(data.head())
+print(data.describe())
+
+# Plot sales over time
+plt.figure(figsize=(12, 6))
+plt.plot(data['date'], data['sales'], label='Sales')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.title('Sales Over Time')
+plt.legend()
+plt.show()
+
+# Feature engineering
+data['dayofweek'] = data['date'].dt.dayofweek
+data['month'] = data['date'].dt.month
+data['year'] = data['date'].dt.year
+data['lag_1'] = data['sales'].shift(1)
+data['rolling_mean_7'] = data['sales'].rolling(window=7).mean()
+data = data.dropna()
+
+# Train/test split
+X = data[['dayofweek', 'month', 'year', 'lag_1', 'rolling_mean_7']]
+y = data['sales']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+
+# Model 1: Random Forest
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf = rf.predict(X_test)
+
+# Model 2: XGBoost
+xgbr = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=100)
+xgbr.fit(X_train, y_train)
+y_pred_xgb = xgbr.predict(X_test)
+
+# Model 3: Exponential Smoothing
+es_model = ExponentialSmoothing(data['sales'], trend='add', seasonal='add', seasonal_periods=12)
+es_fit = es_model.fit()
+y_pred_es = es_fit.fittedvalues[-len(y_test):]
+
+# Evaluation
+print("Random Forest R2:", r2_score(y_test, y_pred_rf))
+print("XGBoost R2:", r2_score(y_test, y_pred_xgb))
+print("Exp Smoothing R2:", r2_score(y_test, y_pred_es))
+
+# Plot Predictions
+plt.figure(figsize=(14, 6))
+plt.plot(data['date'][-len(y_test):], y_test, label='Actual')
+plt.plot(data['date'][-len(y_test):], y_pred_rf, label='Random Forest')
+plt.plot(data['date'][-len(y_test):], y_pred_xgb, label='XGBoost')
+plt.plot(data['date'][-len(y_test):], y_pred_es, label='Exponential Smoothing')
+plt.legend()
+plt.title('Demand Forecasting Predictions')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.grid(True)
+plt.show()
