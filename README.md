@@ -79,6 +79,10 @@ pip install -r requirements.txt
 
     Streamlit (optional for web UI)
 
+    Author Name: Otutu Anslem
+    Github: https://github.com/Otutu11/
+    Linkedin: https://www.linkedin.com/in/otutu-anslem-53a687359/
+
 📚 References
 
     Kaggle Retail Forecasting Competitions
